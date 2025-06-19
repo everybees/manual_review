@@ -86,10 +86,13 @@ with col2:
         summary_df = pd.DataFrame(summary_rows, columns=["Category", "Issue", "Penalty", "Improvement Suggestion"])
         st.dataframe(summary_df, use_container_width=True)
 
+        score = max(1.0, round(5.0 - total_penalty, 1))
+
         if mode == "Prompt Design Review":
             verdict = "✅ Acceptable" if major_issues < 2 else "❌ Unacceptable – Must be rewritten"
             st.markdown(f"**Total Penalty:** `{total_penalty}`")
             st.markdown(f"**Major Issues:** `{major_issues}`")
+            st.markdown(f"**Final Score:** `{score}`")
             st.markdown(f"**Final Verdict:** `{verdict}`")
         else:
             score = max(1.0, round(5.0 - total_penalty, 1))
