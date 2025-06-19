@@ -6,7 +6,26 @@ from sections import ideal_response, model_response, user_prompt
 st.set_page_config(page_title="Review & Scoring Tool", layout="wide")
 st.title("Review & Scoring Tool")
 
-mode = st.selectbox("Select Review Type", ["Prompt Design Review", "Model Response Evaluation", "Ideal Response Evaluation"])
+if "all_reviews" not in st.session_state:
+    st.session_state.all_reviews = {
+        "Prompt Design Review": [],
+        "Model Response Evaluation": [],
+        "Ideal Response Evaluation": []
+    }
+
+
+error_categories = [
+    "Did Not fulfill every functional requirement",
+    "Issues with annotator’s judgement",
+    "Inconsistent failure mode classification",
+    "Redundant Logic",
+    "Issues with Code Readability",
+    "Too Simple",
+    "Critical Errors",
+    "Minor Errors"
+]
+
+mode = st.selectbox("Select Review Type", ["Prompt Design Review", "Model Response Evaluation", "Ideal Response Evaluation", "Summary Page"])
 
 col1, col2 = st.columns([2, 1])
 
@@ -17,6 +36,18 @@ elif mode == "Model Response Evaluation":
     categories = model_response.categories
 elif mode == "Ideal Response Evaluation":
     categories = user_prompt.categories
+elif mode == "Summary Page":
+    st.subheader("📋 Most Recent Submitted Reviews")
+    combined_summary = ""
+    for section in ["Prompt Design Review", "Model Response Evaluation", "Ideal Response Evaluation"]:
+        if st.session_state.all_reviews[section]:
+            combined_summary += f"[{section}]\n"
+            combined_summary += st.session_state.all_reviews[section][-1].strip() + "\n\n"
+    if combined_summary:
+        st.code(combined_summary.strip(), language="markdown")
+    else:
+        st.info("No reviews submitted yet.")
+    st.stop()
 
 review = {}
 total_penalty = 0
@@ -41,6 +72,8 @@ with col1:
                     major_issues += 1
             else:
                 review[category] = ("No issue", 0, "")
+
+        selected_errors = st.multiselect("Select all applicable error categories:", error_categories)
 
         st.markdown("---")
         comments = st.text_area("Additional Comments", height=100)
@@ -83,5 +116,11 @@ with col2:
         summary_text += "\nIssues & Suggestions:\n"
         for cat, (issue, penalty, improvement) in review.items():
             summary_text += f"- {cat}: {issue} (Penalty: {penalty})\n  Improvement: {improvement}\n"
+        summary_text += "\n\nError Categories:\n"
+        for err in selected_errors:
+            summary_text += f"- {err}\n"
         summary_text += f"\nComments:\n{comments}"
         st.code(summary_text.strip(), language="markdown")
+
+        # Save to session state
+        st.session_state.all_reviews[mode].append(summary_text.strip())
